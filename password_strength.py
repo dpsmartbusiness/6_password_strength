@@ -44,7 +44,7 @@ def is_not_date(password):
 def get_password_strength(user_password, password_black_list):
     strength_points_score = 0
     if user_password in password_black_list:
-        return ('{}-password from blacklist'.format(strength_points_score))
+        return '{}-password from blacklist'.format(strength_points_score)
     else:
         strength_password_criteria = [
             is_empty_password,
