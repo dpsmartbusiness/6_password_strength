@@ -8,8 +8,8 @@ def load_blacklist_file(file_path):
         return blacklist_file.read().splitlines()
 
 
-def is_empty_password(password):
-    return bool(re.search('r', password))
+def is_not_empty_password(password):
+    return bool(password)
 
 
 def check_password_length(password):
@@ -17,19 +17,19 @@ def check_password_length(password):
     return len(password) > min_password_length
 
 
-def is_upper_case(password):
+def has_upper_case(password):
     return bool(re.search(r'[A-Z]', password))
 
 
-def is_lower_case(password):
+def has_lower_case(password):
     return bool(re.search(r'[a-z]', password))
 
 
-def is_numbers(password):
+def has_numbers(password):
     return bool(re.search(r'\d', password))
 
 
-def is_symbols(password):
+def has_symbols(password):
     return bool(re.search(r'\W', password))
 
 
@@ -41,33 +41,49 @@ def is_not_date(password):
     return not bool(re.search(r'\d{1,2}[-.]\d{1,2}[-.]\d{2,4}', password))
 
 
+def is_not_mail(password):
+    return not bool(re.search(r'\w{1,30}[@]\w{1,10}[a-z][.][ru|com]', password))
+
+
+def is_not_in_blacklist(password, black_list):
+    return password not in black_list
+
+
 def get_password_strength(user_password, password_black_list):
     strength_points_score = 0
-    if user_password in password_black_list:
+    if not is_not_in_blacklist(user_password, password_black_list):
         return '{}-password from blacklist'.format(strength_points_score)
+    elif not is_not_empty_password(user_password):
+        return 'You forgot to type a password. Try again.'
     else:
+        strength_points_score += 1
         strength_password_criteria = [
-            is_empty_password,
+            is_not_empty_password,
             check_password_length,
-            is_upper_case,
-            is_lower_case,
-            is_numbers,
-            is_symbols,
+            has_upper_case,
+            has_lower_case,
+            has_numbers,
+            has_symbols,
             is_not_phone_number,
-            is_not_date
+            is_not_date,
+            is_not_mail
         ]
-        for request in strength_password_criteria:
-            if request(user_password):
+        for strength_criteria in strength_password_criteria:
+            if strength_criteria(user_password):
                 strength_points_score += 1
         return strength_points_score
 
 
 if __name__ == '__main__':
-    user_password = getpass.getpass('Type your password: ')
-    password_black_list = load_blacklist_file(sys.argv[1])
-    strength_points = get_password_strength(
-        user_password,
-        password_black_list
-    )
-    print ('User\'s password: {}'.format(user_password))
-    print ('Password strength score: {}'.format(strength_points))
+    try:
+        password_black_list = load_blacklist_file(sys.argv[1])
+        user_password = getpass.getpass('Type your password: ')
+        strength_points = get_password_strength(
+            user_password,
+            password_black_list
+        )
+        print ('Password strength score: {}'.format(strength_points))
+    except FileNotFoundError:
+        print('Incorrect path to blacklist. Try again.')
+    except IndexError:
+        print ('Specify a path to blacklist. Try again.')
